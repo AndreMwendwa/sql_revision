@@ -1,0 +1,809 @@
+metadata:
+  title: 50 SQL Questions and Explained Answers
+  dialect: Microsoft SQL Server (T-SQL)
+  language: en
+  version: '1.0'
+  question_count: 50
+  audience: Beginner to advanced SQL developers and database administrators
+  question_types:
+    multiple_choice: Select exactly one option key; answer is a string.
+    multiple_select: Select all correct option keys; answer is a list.
+    true_false: Answer is a YAML boolean.
+    short_answer: Enter a brief value; accepted_answers lists permitted variants.
+    code_completion: Fill the blank; answer supplies the missing T-SQL fragment.
+    query_writing: Write executable T-SQL; answer is a sample solution, not necessarily unique.
+    ordering: Arrange option keys in the correct sequence; answer is an ordered list.
+  grading_policy: For free-text SQL, accept semantically equivalent T-SQL. Do not require identical capitalization,
+    whitespace, or aliases.
+  reference_schema:
+    dbo.Customers: CustomerID INT PRIMARY KEY, CustomerName NVARCHAR(100), Country NVARCHAR(80), SignupDate DATE
+    dbo.Orders: OrderID INT PRIMARY KEY, CustomerID INT, OrderDate DATETIME2, TotalAmount DECIMAL(12,2), DiscountAmount
+      DECIMAL(12,2) NULL, Status VARCHAR(30)
+    dbo.OrderItems: OrderID INT, ProductID INT, Quantity INT, UnitPrice DECIMAL(12,2)
+    dbo.Products: ProductID INT PRIMARY KEY, ProductName NVARCHAR(100), CategoryID INT, Price DECIMAL(12,2)
+    dbo.Employees: EmployeeID INT PRIMARY KEY, ManagerID INT NULL, DepartmentID INT, Salary DECIMAL(12,2), HireDate
+      DATE
+    dbo.Departments: DepartmentID INT PRIMARY KEY, DepartmentName NVARCHAR(100)
+    dbo.Accounts: AccountID INT PRIMARY KEY, Balance DECIMAL(14,2)
+  schema_notes: Illustrative tables, not supplied or prepopulated; reference solutions assume meaningful rows and
+    referentially sensible data. Unqualified predicates use SQL Server standard semantics and configured collation.
+questions:
+- id: SQL-001
+  difficulty: beginner
+  topic: SELECT
+  type: multiple_choice
+  question: Which query returns CustomerName and Country from all rows in dbo.Customers?
+  options:
+    A: GET CustomerName, Country FROM dbo.Customers;
+    B: SELECT CustomerName, Country FROM dbo.Customers;
+    C: SELECT dbo.Customers WHERE CustomerName, Country;
+    D: SHOW CustomerName, Country IN dbo.Customers;
+  answer: B
+  explanation: SELECT specifies output expressions or columns; FROM identifies the source table.
+  documentation:
+  - title: SELECT (Transact-SQL)
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
+- id: SQL-002
+  difficulty: beginner
+  topic: Filtering
+  type: code_completion
+  question: 'Complete the query to return orders with TotalAmount greater than 100: SELECT * FROM dbo.Orders ____;'
+  answer: WHERE TotalAmount > 100
+  explanation: WHERE restricts rows before they are returned; > is a strict comparison and excludes exactly 100.
+  documentation:
+  - title: SELECT - WHERE clause
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/where-transact-sql
+- id: SQL-003
+  difficulty: beginner
+  topic: DISTINCT
+  type: true_false
+  question: SELECT DISTINCT Country FROM dbo.Customers returns at most one row for each distinct Country value.
+  answer: true
+  explanation: DISTINCT eliminates duplicate result rows based on the selected expressions, including duplicate
+    NULL values.
+  documentation:
+  - title: SELECT clause
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-clause-transact-sql
+- id: SQL-004
+  difficulty: beginner
+  topic: Sorting
+  type: multiple_choice
+  question: Which clause sorts Orders from newest OrderDate to oldest?
+  options:
+    A: SORT BY OrderDate DESC
+    B: ORDER BY OrderDate ASC
+    C: ORDER BY OrderDate DESC
+    D: GROUP BY OrderDate DESC
+  answer: C
+  explanation: ORDER BY ... DESC sorts in descending order; add a unique tie-breaker when deterministic order among
+    ties matters.
+  documentation:
+  - title: ORDER BY clause
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-order-by-clause-transact-sql
+- id: SQL-005
+  difficulty: beginner
+  topic: Limiting results
+  type: code_completion
+  question: 'Fill the blank in SQL Server syntax to return up to 10 products: SELECT ____ ProductID, ProductName
+    FROM dbo.Products ORDER BY ProductID;'
+  answer: TOP (10)
+  explanation: SQL Server supports TOP (10). Including ORDER BY makes the chosen first 10 rows deterministic when
+    the ordering key is unique.
+  documentation:
+  - title: SELECT clause
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-clause-transact-sql
+- id: SQL-006
+  difficulty: beginner
+  topic: NULL handling
+  type: multiple_select
+  question: Which predicates correctly select rows with NULL in ManagerID? Select all that apply.
+  options:
+    A: ManagerID IS NULL
+    B: ManagerID = NULL
+    C: ManagerID <> NULL
+    D: NOT (ManagerID IS NOT NULL)
+  answer:
+  - A
+  - D
+  explanation: Use IS NULL or NOT(IS NOT NULL). The equality operators = NULL and <> NULL do not return TRUE under
+    normal ANSI NULL semantics.
+  documentation:
+  - title: IS NULL operator
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/is-null-transact-sql
+- id: SQL-007
+  difficulty: beginner
+  topic: Pattern matching
+  type: multiple_choice
+  question: What does WHERE CustomerName LIKE 'Ann%' match?
+  options:
+    A: Only the exact name Ann
+    B: Names beginning with Ann
+    C: Names ending with Ann
+    D: Names containing Ann only in the middle
+  answer: B
+  explanation: The percent sign is a wildcard representing zero or more characters, so Ann itself and names starting
+    Ann can match.
+  documentation:
+  - title: LIKE operator
+    url: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/like-transact-sql
+- id: SQL-008
+  difficulty: beginner
+  topic: Filtering
+  type: true_false
+  question: The predicate Price BETWEEN 10 AND 20 includes both Price = 10 and Price = 20.
+  answer: true
+  explanation: BETWEEN is inclusive at both ends and is equivalent to Price >= 10 AND Price <= 20.
+  documentation:
+  - title: BETWEEN operator
+    url: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/between-transact-sql
+- id: SQL-009
+  difficulty: beginner
+  topic: Aggregates
+  type: multiple_choice
+  question: A table has five rows and Salary is NULL in two rows. What is COUNT(Salary)?
+  options:
+    A: '2'
+    B: '3'
+    C: '5'
+    D: 'NULL'
+  answer: B
+  explanation: COUNT(column) ignores NULL values, whereas COUNT(*) counts rows.
+  documentation:
+  - title: COUNT function
+    url: https://learn.microsoft.com/en-us/sql/t-sql/functions/count-transact-sql
+- id: SQL-010
+  difficulty: beginner
+  topic: DISTINCT
+  type: short_answer
+  question: Which single SQL keyword removes duplicate result rows in a SELECT query?
+  answer: DISTINCT
+  accepted_answers:
+  - DISTINCT
+  - distinct
+  grading_notes: Case-insensitive; ignore surrounding whitespace.
+  explanation: Put DISTINCT immediately after SELECT to return unique combinations of the projected expressions.
+  documentation:
+  - title: SELECT clause
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-clause-transact-sql
+- id: SQL-011
+  difficulty: beginner
+  topic: Filtering
+  type: query_writing
+  question: Write T-SQL to list CustomerID and CustomerName for customers in Canada, sorted by CustomerID ascending.
+  answer: |-
+    SELECT CustomerID, CustomerName
+    FROM dbo.Customers
+    WHERE Country = 'Canada'
+    ORDER BY CustomerID ASC;
+  grading_notes: Accept equivalent aliases/formatting and omitted ASC (ascending is the default).
+  explanation: WHERE Country = ... filters the source rows; ORDER BY ensures a defined result order. String matching
+    follows the configured collation.
+  documentation:
+  - title: SELECT (Transact-SQL)
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
+- id: SQL-012
+  difficulty: beginner
+  topic: UPDATE
+  type: multiple_choice
+  question: Why is omitting WHERE from an UPDATE statement potentially dangerous?
+  options:
+    A: It deletes the table
+    B: It fails to parse
+    C: It automatically rolls back
+    D: It can modify every row
+  answer: D
+  explanation: Without a restricting predicate, UPDATE ordinarily updates every row of the target table.
+  documentation:
+  - title: UPDATE statement
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/update-transact-sql
+- id: SQL-013
+  difficulty: beginner
+  topic: TRUNCATE TABLE
+  type: multiple_select
+  question: Which statements about TRUNCATE TABLE in SQL Server are correct? Select all that apply.
+  options:
+    A: It removes all rows from the specified table.
+    B: It supports WHERE to choose individual rows.
+    C: It resets the IDENTITY counter to the defined seed when the table has one.
+    D: It can be rolled back within an explicit transaction.
+  answer:
+  - A
+  - C
+  - D
+  explanation: TRUNCATE removes all table rows and resets an identity counter. It can be rolled back when executed
+    in an explicit transaction. It does not accept a WHERE clause.
+  documentation:
+  - title: TRUNCATE TABLE statement
+    url: https://learn.microsoft.com/en-us/sql/t-sql/statements/truncate-table-transact-sql
+- id: SQL-014
+  difficulty: beginner
+  topic: Constraints
+  type: multiple_choice
+  question: Which constraint ensures that a key uniquely identifies a row and cannot be NULL?
+  options:
+    A: PRIMARY KEY
+    B: DEFAULT
+    C: CHECK
+    D: FOREIGN KEY
+  answer: A
+  explanation: A PRIMARY KEY imposes uniqueness and NOT NULL semantics. A table has at most one primary-key constraint,
+    which may contain multiple columns.
+  documentation:
+  - title: CREATE TABLE statement and constraints
+    url: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-table-transact-sql
+- id: SQL-015
+  difficulty: beginner
+  topic: Constraints
+  type: true_false
+  question: A FOREIGN KEY guarantees that the referencing column is always NOT NULL.
+  answer: false
+  explanation: A nullable foreign key can contain NULL unless NOT NULL is declared; non-NULL values must satisfy
+    the referential constraint.
+  documentation:
+  - title: CREATE TABLE statement and constraints
+    url: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-table-transact-sql
+- id: SQL-016
+  difficulty: intermediate
+  topic: Logical query processing
+  type: ordering
+  question: Put these SQL clauses in their usual logical processing order (ignoring joins/subqueries).
+  options:
+    F: FROM
+    W: WHERE
+    G: GROUP BY
+    H: HAVING
+    S: SELECT
+    O: ORDER BY
+  answer:
+  - F
+  - W
+  - G
+  - H
+  - S
+  - O
+  explanation: For these clauses, the conceptual order is FROM, WHERE, GROUP BY, HAVING, SELECT, ORDER BY. The written
+    syntax order differs.
+  documentation:
+  - title: SELECT (Transact-SQL)
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
+- id: SQL-017
+  difficulty: intermediate
+  topic: Joins
+  type: multiple_choice
+  question: Which join returns only matching rows from both Customers and Orders?
+  options:
+    A: INNER JOIN
+    B: LEFT JOIN
+    C: FULL OUTER JOIN
+    D: CROSS JOIN
+  answer: A
+  explanation: INNER JOIN returns joined rows for which the ON condition evaluates to TRUE.
+  documentation:
+  - title: FROM, JOIN, APPLY, and PIVOT
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/from-transact-sql
+- id: SQL-018
+  difficulty: intermediate
+  topic: Joins
+  type: query_writing
+  question: Return every customer and any matching OrderID, including customers who have no orders. Return CustomerID,
+    CustomerName and OrderID.
+  answer: |-
+    SELECT c.CustomerID, c.CustomerName, o.OrderID
+    FROM dbo.Customers AS c
+    LEFT JOIN dbo.Orders AS o
+      ON o.CustomerID = c.CustomerID;
+  grading_notes: Accept equivalent left-outer-join solutions. Do not require one row per customer.
+  explanation: LEFT JOIN preserves every row from Customers; unmatched order columns are NULL. A customer with several
+    orders appears several times.
+  documentation:
+  - title: FROM, JOIN, APPLY, and PIVOT
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/from-transact-sql
+- id: SQL-019
+  difficulty: intermediate
+  topic: Anti-joins
+  type: multiple_select
+  question: Which patterns correctly find customers who have no matching rows in Orders? Select all that apply.
+  options:
+    A: SELECT c.CustomerID FROM dbo.Customers c WHERE NOT EXISTS (SELECT 1 FROM dbo.Orders o WHERE o.CustomerID
+      = c.CustomerID);
+    B: SELECT c.CustomerID FROM dbo.Customers c INNER JOIN dbo.Orders o ON o.CustomerID = c.CustomerID;
+    C: SELECT c.CustomerID FROM dbo.Customers c LEFT JOIN dbo.Orders o ON o.CustomerID = c.CustomerID WHERE o.OrderID
+      IS NULL;
+    D: SELECT c.CustomerID FROM dbo.Customers c WHERE EXISTS (SELECT 1 FROM dbo.Orders o WHERE o.CustomerID = c.CustomerID);
+  answer:
+  - A
+  - C
+  explanation: NOT EXISTS checks absence of matching rows. A LEFT JOIN followed by WHERE o.OrderID IS NULL also
+    works when OrderID is NOT NULL.
+  documentation:
+  - title: EXISTS predicate
+    url: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/exists-transact-sql
+- id: SQL-020
+  difficulty: intermediate
+  topic: GROUP BY
+  type: code_completion
+  question: 'Fill the blank to count employees in each department: SELECT DepartmentID, COUNT(*) AS EmployeeCount
+    FROM dbo.Employees ____;'
+  answer: GROUP BY DepartmentID
+  explanation: Nonaggregated selected columns generally need to appear in GROUP BY when aggregates are used.
+  documentation:
+  - title: GROUP BY clause
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-group-by-transact-sql
+- id: SQL-021
+  difficulty: intermediate
+  topic: HAVING
+  type: multiple_choice
+  question: Which clause filters grouped results after aggregation?
+  options:
+    A: WHERE
+    B: ORDER BY
+    C: DISTINCT
+    D: HAVING
+  answer: D
+  explanation: HAVING filters groups and can use aggregate conditions, whereas WHERE filters source rows before
+    grouping.
+  documentation:
+  - title: HAVING clause
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-having-transact-sql
+- id: SQL-022
+  difficulty: intermediate
+  topic: Aggregation
+  type: query_writing
+  question: Write a query returning Status and OrderCount for statuses with at least five orders, largest count
+    first.
+  answer: |-
+    SELECT Status, COUNT(*) AS OrderCount
+    FROM dbo.Orders
+    GROUP BY Status
+    HAVING COUNT(*) >= 5
+    ORDER BY OrderCount DESC, Status ASC;
+  grading_notes: Accept equivalent T-SQL; secondary sorting by Status is optional.
+  explanation: GROUP BY produces counts by status, HAVING keeps groups meeting the threshold, and ORDER BY sorts
+    them.
+  documentation:
+  - title: HAVING clause
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-having-transact-sql
+- id: SQL-023
+  difficulty: intermediate
+  topic: Set operators
+  type: short_answer
+  question: Which SQL set operator combines two compatible query results while retaining duplicates?
+  answer: UNION ALL
+  accepted_answers:
+  - UNION ALL
+  - union all
+  grading_notes: Case-insensitive, whitespace-insensitive.
+  explanation: UNION ALL concatenates compatible result sets without removing duplicates; UNION applies distinctness.
+  documentation:
+  - title: UNION operator
+    url: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/set-operators-union-transact-sql
+- id: SQL-024
+  difficulty: intermediate
+  topic: CASE
+  type: multiple_choice
+  question: What is returned by CASE WHEN 7 >= 10 THEN 'High' ELSE 'Low' END?
+  options:
+    A: High
+    B: 'NULL'
+    C: Low
+    D: An error
+  answer: C
+  explanation: The condition is false, so CASE returns the ELSE expression.
+  documentation:
+  - title: CASE expression
+    url: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/case-transact-sql
+- id: SQL-025
+  difficulty: intermediate
+  topic: NULL handling
+  type: code_completion
+  question: 'Replace ____ with an expression that returns zero when DiscountAmount is NULL and otherwise returns
+    DiscountAmount: SELECT ____ AS Discount FROM dbo.Orders; '
+  answer: COALESCE(DiscountAmount, 0)
+  explanation: COALESCE returns the first non-NULL expression. Be mindful of data-type precedence and casting for
+    real-world calculations.
+  documentation:
+  - title: COALESCE expression
+    url: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/coalesce-transact-sql
+- id: SQL-026
+  difficulty: intermediate
+  topic: Aggregates
+  type: true_false
+  question: COUNT(*) and COUNT(Salary) always return the same value for a table, even if Salary contains NULL.
+  answer: false
+  explanation: COUNT(*) counts all rows; COUNT(Salary) counts only rows where Salary is not NULL.
+  documentation:
+  - title: COUNT function
+    url: https://learn.microsoft.com/en-us/sql/t-sql/functions/count-transact-sql
+- id: SQL-027
+  difficulty: intermediate
+  topic: Joins and aggregation
+  type: query_writing
+  question: Return every customer with their total order value as TotalSpent, including zero for customers with
+    no orders; group by customer.
+  answer: |-
+    SELECT c.CustomerID, c.CustomerName,
+           COALESCE(SUM(o.TotalAmount), 0) AS TotalSpent
+    FROM dbo.Customers AS c
+    LEFT JOIN dbo.Orders AS o
+      ON o.CustomerID = c.CustomerID
+    GROUP BY c.CustomerID, c.CustomerName;
+  grading_notes: Equivalent correlated-subquery or pre-aggregated approaches are acceptable.
+  explanation: LEFT JOIN retains customers without orders, SUM totals matching values, and COALESCE replaces the
+    resulting NULL total with zero.
+  documentation:
+  - title: FROM, JOIN, APPLY, and PIVOT
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/from-transact-sql
+- id: SQL-028
+  difficulty: intermediate
+  topic: SQL injection
+  type: multiple_choice
+  question: Which approach is safest for using an untrusted customer ID in a dynamic SQL value predicate?
+  options:
+    A: Concatenate the customer ID directly into the query string.
+    B: Pass the customer ID as a typed parameter to sp_executesql.
+    C: Strip spaces from the input and concatenate it.
+    D: Use EXEC(@sql) after directly concatenating the input.
+  answer: B
+  explanation: Use bound parameters (for example, with sp_executesql) rather than concatenating untrusted values
+    into executable SQL text.
+  documentation:
+  - title: sp_executesql stored procedure
+    url: https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-executesql-transact-sql
+- id: SQL-029
+  difficulty: intermediate
+  topic: CTEs
+  type: multiple_choice
+  question: Which statement about a nonrecursive common table expression (CTE) is correct in SQL Server?
+  options:
+    A: A CTE is scoped to the immediately following statement.
+    B: A CTE automatically creates a permanently stored table.
+    C: Every CTE is indexed by default.
+    D: A CTE can only be used with DELETE.
+  answer: A
+  explanation: A CTE is a named result set scoped to the immediately following statement. Its results are not inherently
+    materialized for reuse.
+  documentation:
+  - title: Common table expressions
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/with-common-table-expression-transact-sql
+- id: SQL-030
+  difficulty: intermediate
+  topic: Window functions
+  type: code_completion
+  question: 'Complete the expression to number employees from highest to lowest Salary within each DepartmentID,
+    breaking ties by EmployeeID: ROW_NUMBER() ____ AS rn'
+  answer: OVER (PARTITION BY DepartmentID ORDER BY Salary DESC, EmployeeID ASC)
+  explanation: PARTITION BY resets numbering for each department. ORDER BY Salary DESC then EmployeeID creates a
+    deterministic ordering when EmployeeID is unique.
+  documentation:
+  - title: ROW_NUMBER function
+    url: https://learn.microsoft.com/en-us/sql/t-sql/functions/row-number-transact-sql
+- id: SQL-031
+  difficulty: intermediate
+  topic: Ranking functions
+  type: multiple_select
+  question: Which functions assign the same rank value to tied rows when ordered by the same nonunique expression?
+    Select all that apply.
+  options:
+    A: ROW_NUMBER()
+    B: RANK()
+    C: DENSE_RANK()
+    D: COUNT(*)
+  answer:
+  - B
+  - C
+  explanation: RANK and DENSE_RANK assign the same position to tied rows. RANK leaves gaps after ties, while DENSE_RANK
+    does not. ROW_NUMBER never gives two rows the same number.
+  documentation:
+  - title: RANK function
+    url: https://learn.microsoft.com/en-us/sql/t-sql/functions/rank-transact-sql
+- id: SQL-032
+  difficulty: intermediate
+  topic: Top N per group
+  type: query_writing
+  question: Return one highest-paid employee per department with EmployeeID, DepartmentID, and Salary. Break salary
+    ties by smaller EmployeeID.
+  answer: |-
+    WITH Ranked AS (
+      SELECT EmployeeID, DepartmentID, Salary,
+             ROW_NUMBER() OVER (
+               PARTITION BY DepartmentID
+               ORDER BY Salary DESC, EmployeeID ASC
+             ) AS rn
+      FROM dbo.Employees
+    )
+    SELECT EmployeeID, DepartmentID, Salary
+    FROM Ranked
+    WHERE rn = 1;
+  grading_notes: Accept equivalent CROSS APPLY TOP (1) or other deterministic T-SQL solutions.
+  explanation: ROW_NUMBER partitioned by DepartmentID selects exactly one row in each department. The employee ID
+    tie-breaker makes the choice stable.
+  documentation:
+  - title: ROW_NUMBER function
+    url: https://learn.microsoft.com/en-us/sql/t-sql/functions/row-number-transact-sql
+- id: SQL-033
+  difficulty: intermediate
+  topic: Window functions
+  type: multiple_choice
+  question: What is the main difference between SUM(TotalAmount) OVER (PARTITION BY CustomerID) and a GROUP BY CustomerID
+    aggregation?
+  options:
+    A: The window version removes all duplicates.
+    B: The window version requires a temporary table.
+    C: GROUP BY always returns more rows.
+    D: The window version retains detail rows while adding a group-level value.
+  answer: D
+  explanation: The window aggregate computes a customer-level value while retaining each underlying input row. GROUP
+    BY reduces rows to groups.
+  documentation:
+  - title: OVER clause and window functions
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-over-clause-transact-sql
+- id: SQL-034
+  difficulty: intermediate
+  topic: Window functions
+  type: code_completion
+  question: 'Complete the expression for a per-customer total across all that customer''s order rows: SUM(TotalAmount)
+    ____ AS CustomerTotal'
+  answer: OVER (PARTITION BY CustomerID)
+  explanation: An OVER clause with PARTITION BY and no ORDER BY computes the aggregate for each entire customer
+    partition.
+  documentation:
+  - title: OVER clause and window functions
+    url: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-over-clause-transact-sql
+- id: SQL-035
+  difficulty: intermediate
+  topic: Date filtering
+  type: code_completion
+  question: 'Fill the blank to filter datetime2 OrderDate values to calendar year 2026 in a way that avoids wrapping
+    the indexed column in YEAR(): SELECT * FROM dbo.Orders WHERE ____;'
+  answer: OrderDate >= '20260101' AND OrderDate < '20270101'
+  explanation: The half-open date interval includes all times in 2026 and excludes the first instant of 2027. It
+    is generally more index-friendly than YEAR(OrderDate) = 2026.
+  documentation:
+  - title: SQL Server index design guide
+    url: https://learn.microsoft.com/en-us/sql/relational-databases/sql-server-index-design-guide
+- id: SQL-036
+  difficulty: intermediate
+  topic: Index design
+  type: multiple_select
+  question: Which statements about SQL Server nonclustered indexes are generally correct? Select all that apply.
+  options:
+    A: An index on frequently filtered columns can improve some queries.
+    B: Every SELECT must use an index seek to be optimal.
+    C: Additional indexes can increase INSERT and UPDATE cost.
+    D: An index never consumes extra storage.
+  answer:
+  - A
+  - C
+  explanation: Appropriate indexes can accelerate selective queries, but each extra index adds storage and data-modification
+    overhead. Small-table scans can be cheaper than seeks.
+  documentation:
+  - title: SQL Server index design guide
+    url: https://learn.microsoft.com/en-us/sql/relational-databases/sql-server-index-design-guide
+- id: SQL-037
+  difficulty: intermediate
+  topic: Index creation
+  type: query_writing
+  question: Create a nonclustered index on dbo.Orders using CustomerID and OrderDate as key columns and TotalAmount
+    as an included column. Name it IX_Orders_CustomerDate.
+  answer: |-
+    CREATE NONCLUSTERED INDEX IX_Orders_CustomerDate
+    ON dbo.Orders (CustomerID, OrderDate)
+    INCLUDE (TotalAmount);
+  grading_notes: NONCLUSTERED is the default for CREATE INDEX; omitting that word is acceptable.
+  explanation: Key columns support seeks and ordering; INCLUDE keeps a non-key column at the leaf level, potentially
+    covering relevant queries.
+  documentation:
+  - title: CREATE INDEX statement
+    url: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-index-transact-sql
+- id: SQL-038
+  difficulty: advanced
+  topic: Clustered indexes
+  type: multiple_choice
+  question: Which statement best describes a clustered rowstore index in SQL Server?
+  options:
+    A: It stores only pointers, never data rows.
+    B: Its leaf level contains the table data rows organized by its key.
+    C: A table can have unlimited clustered indexes.
+    D: It guarantees SELECT row order without ORDER BY.
+  answer: B
+  explanation: A clustered index determines the logical key ordering of data rows at the leaf level; a table can
+    have only one clustered index.
+  documentation:
+  - title: SQL Server index design guide
+    url: https://learn.microsoft.com/en-us/sql/relational-databases/sql-server-index-design-guide
+- id: SQL-039
+  difficulty: advanced
+  topic: Query tuning
+  type: true_false
+  question: An index scan is always slower than an index seek, regardless of how many rows a query needs.
+  answer: false
+  explanation: Scans can be more efficient when a query reads much of a table or index. Evaluate logical reads,
+    time, estimates, and actual row counts instead of operator names alone.
+  documentation:
+  - title: SQL Server index design guide
+    url: https://learn.microsoft.com/en-us/sql/relational-databases/sql-server-index-design-guide
+- id: SQL-040
+  difficulty: advanced
+  topic: Execution plans
+  type: multiple_choice
+  question: What extra information can an actual execution plan provide compared with an estimated plan?
+  options:
+    A: Actual runtime row counts and execution metrics.
+    B: Guaranteed correctness of query results.
+    C: Automatic creation of every missing index.
+    D: An automatic database backup.
+  answer: A
+  explanation: Actual plans include execution-time measurements such as actual row counts and warnings, useful for
+    identifying cardinality-estimation errors.
+  documentation:
+  - title: Display an actual execution plan
+    url: https://learn.microsoft.com/en-us/sql/relational-databases/performance/display-an-actual-execution-plan
+- id: SQL-041
+  difficulty: advanced
+  topic: Performance diagnostics
+  type: code_completion
+  question: 'Fill the blank to turn on logical/physical I/O statistics for the session: SET ____ ON;'
+  answer: STATISTICS IO
+  explanation: SET STATISTICS IO ON reports reads generated by executed statements. Turn it off using SET STATISTICS
+    IO OFF.
+  documentation:
+  - title: SET STATISTICS IO statement
+    url: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-statistics-io-transact-sql
+- id: SQL-042
+  difficulty: advanced
+  topic: Transactions
+  type: multiple_choice
+  question: What does ROLLBACK TRANSACTION do to uncommitted changes in the current transaction?
+  options:
+    A: Makes changes permanent
+    B: Only releases SELECT locks
+    C: Reverses the uncommitted changes
+    D: Drops the entire database
+  answer: C
+  explanation: ROLLBACK undoes changes made in the transaction and ends it (or rolls back to a savepoint when specified).
+  documentation:
+  - title: BEGIN TRANSACTION statement
+    url: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/begin-transaction-transact-sql
+- id: SQL-043
+  difficulty: advanced
+  topic: Transactions
+  type: ordering
+  question: Order these steps for a successful explicit two-account transfer transaction. Assume both UPDATE statements
+    succeed.
+  options:
+    A: COMMIT TRANSACTION;
+    B: BEGIN TRANSACTION;
+    C: UPDATE dbo.Accounts SET Balance = Balance + 50 WHERE AccountID = 2;
+    D: UPDATE dbo.Accounts SET Balance = Balance - 50 WHERE AccountID = 1;
+  answer:
+  - B
+  - D
+  - C
+  - A
+  explanation: Begin the transaction, apply the debit and credit, and commit only after both succeed. Production
+    code also needs error handling and suitable concurrency controls.
+  documentation:
+  - title: BEGIN TRANSACTION statement
+    url: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/begin-transaction-transact-sql
+- id: SQL-044
+  difficulty: advanced
+  topic: Error handling
+  type: multiple_select
+  question: Which statements about XACT_STATE() are correct? Select all that apply.
+  options:
+    A: 1 means an active user transaction is committable.
+    B: -1 means an active user transaction cannot be committed.
+    C: 0 means an active user transaction is uncommittable.
+    D: 0 means there is no active user transaction.
+  answer:
+  - A
+  - B
+  - D
+  explanation: XACT_STATE() returns 1 when an active transaction is committable, -1 when active but uncommittable
+    (requiring rollback), and 0 when no active transaction exists.
+  documentation:
+  - title: XACT_STATE function
+    url: https://learn.microsoft.com/en-us/sql/t-sql/functions/xact-state-transact-sql
+- id: SQL-045
+  difficulty: advanced
+  topic: Isolation levels
+  type: multiple_choice
+  question: Which isolation level permits dirty reads of uncommitted changes?
+  options:
+    A: SERIALIZABLE
+    B: REPEATABLE READ
+    C: SNAPSHOT
+    D: READ UNCOMMITTED
+  answer: D
+  explanation: READ UNCOMMITTED allows a transaction to read changes that another transaction has not committed.
+    Such values might later be rolled back.
+  documentation:
+  - title: SET TRANSACTION ISOLATION LEVEL
+    url: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-transaction-isolation-level-transact-sql
+- id: SQL-046
+  difficulty: advanced
+  topic: Row versioning
+  type: multiple_choice
+  question: With SQL Server row-versioning options appropriately enabled, what is the key visibility difference
+    between READ_COMMITTED_SNAPSHOT (RCSI) and SNAPSHOT isolation?
+  options:
+    A: RCSI uses statement-level snapshots; SNAPSHOT uses a transaction-level snapshot.
+    B: RCSI always allows dirty reads.
+    C: SNAPSHOT guarantees no update conflicts.
+    D: Both always use precisely the same snapshot for all statements across transactions.
+  answer: A
+  explanation: RCSI provides statement-level consistency for READ COMMITTED reads; SNAPSHOT uses transaction-level
+    consistency. Both require relevant database configuration.
+  documentation:
+  - title: SET TRANSACTION ISOLATION LEVEL
+    url: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-transaction-isolation-level-transact-sql
+- id: SQL-047
+  difficulty: advanced
+  topic: Deadlocks
+  type: short_answer
+  question: What SQL Server error number is commonly raised when a transaction is chosen as a deadlock victim?
+  answer: '1205'
+  accepted_answers:
+  - '1205'
+  - Error 1205
+  - error 1205
+  grading_notes: Accept error number with or without the word Error.
+  explanation: SQL Server detects deadlocks, chooses a victim to roll back, and raises error 1205 to the affected
+    application.
+  documentation:
+  - title: SQL Server deadlocks guide
+    url: https://learn.microsoft.com/en-us/sql/relational-databases/sql-server-deadlocks-guide
+- id: SQL-048
+  difficulty: advanced
+  topic: Transparent Data Encryption
+  type: multiple_select
+  question: Which statements about SQL Server Transparent Data Encryption (TDE) are correct? Select all that apply.
+  options:
+    A: It encrypts database data and transaction-log files at rest.
+    B: It replaces TLS for client-to-server network traffic.
+    C: Managing and backing up the protecting certificate/key is important for restoring encrypted databases.
+    D: It prevents privileged users from reading decrypted data through normal database access.
+  answer:
+  - A
+  - C
+  explanation: TDE protects database data and log files at rest. It does not itself encrypt network connections;
+    retain and securely back up the protecting certificate/key to support restore scenarios.
+  documentation:
+  - title: Transparent data encryption (TDE)
+    url: https://learn.microsoft.com/en-us/sql/relational-databases/security/encryption/transparent-data-encryption
+- id: SQL-049
+  difficulty: advanced
+  topic: Always On availability groups
+  type: multiple_select
+  question: For a conventional (non-contained) SQL Server Always On availability group, which statements are correct?
+    Select all that apply.
+  options:
+    A: They provide high availability for specified user databases.
+    B: They automatically synchronize SQL Server Agent jobs across all replicas.
+    C: They automatically synchronize every server-level login across all replicas.
+    D: Some secondary replicas can be configured for read-only workloads.
+  answer:
+  - A
+  - D
+  explanation: Availability groups protect selected user databases and can provide readable secondaries subject
+    to configuration. Server-level logins and SQL Agent jobs are not automatically synchronized by the AG itself.
+  documentation:
+  - title: Always On availability groups
+    url: https://learn.microsoft.com/en-us/sql/database-engine/availability-groups/windows/always-on-availability-groups-sql-server
+- id: SQL-050
+  difficulty: advanced
+  topic: Dynamic management views
+  type: query_writing
+  question: Write T-SQL using sys.dm_exec_requests to list currently executing requests that report a positive blocking_session_id.
+    Show session_id, blocking_session_id and wait_type.
+  answer: |-
+    SELECT session_id, blocking_session_id, wait_type
+    FROM sys.dm_exec_requests
+    WHERE blocking_session_id > 0;
+  grading_notes: Accept equivalent predicates that isolate positive blocking_session_id values and return the named
+    columns.
+  explanation: sys.dm_exec_requests describes currently executing requests. Positive blocking_session_id values
+    indicate sessions identified as blockers; visibility depends on permissions.
+  documentation:
+  - title: sys.dm_exec_requests DMV
+    url: https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-exec-requests-transact-sql
