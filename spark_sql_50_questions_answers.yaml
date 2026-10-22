@@ -1,0 +1,851 @@
+metadata:
+  title: 50 Spark SQL Questions and Explained Answers
+  dialect: Apache Spark SQL (Spark 3.5+ compatible core syntax)
+  language: en
+  version: '1.0'
+  question_count: 50
+  audience: Data analysts, PySpark engineers, and data engineers learning distributed SQL
+  question_types:
+    multiple_choice: Select exactly one option key; answer is a string.
+    multiple_select: Select all correct option keys; answer is a list.
+    true_false: Answer is a YAML boolean.
+    short_answer: Enter a brief value; accepted_answers lists permitted variants.
+    code_completion: Fill the blank; answer supplies the missing Spark SQL fragment.
+    query_writing: Write Spark SQL; answer is a sample solution, not necessarily unique.
+    ordering: Arrange option keys in the correct sequence; answer is an ordered list.
+  grading_policy: Objective questions are graded automatically. Query-writing responses require human/self
+    review; semantically equivalent Spark SQL is acceptable.
+  reference_schema:
+    customers: customer_id BIGINT, customer_name STRING, country STRING, signup_date DATE
+    orders: order_id BIGINT, customer_id BIGINT, order_date DATE, total_amount DECIMAL(12,2), status STRING
+    order_items: order_id BIGINT, product_id BIGINT, quantity INT, unit_price DECIMAL(12,2)
+    products: product_id BIGINT, product_name STRING, category STRING, price DECIMAL(12,2)
+    employees: employee_id BIGINT, department_id BIGINT, salary DECIMAL(12,2), hire_date DATE
+    events: event_id BIGINT, user_id BIGINT, event_date DATE, tags ARRAY<STRING>
+    raw_events: event_id BIGINT, payload STRING (JSON document)
+    daily_metrics: metric_date DATE, category STRING, value DOUBLE
+  schema_notes: Illustrative catalog tables/views. Assumed to exist in the current Spark catalog; no data or
+    live cluster is supplied. Questions about files and query plans assume standard Apache Spark SQL capabilities,
+    without Databricks/Delta-only commands.
+questions:
+- id: SPARK-001
+  difficulty: beginner
+  topic: SELECT
+  type: multiple_choice
+  question: Which statement selects customer_name and country from the Spark SQL table customers?
+  options:
+    A: SHOW customer_name, country IN customers;
+    B: SELECT customer_name, country FROM customers;
+    C: GET customer_name, country FROM customers;
+    D: SELECT customers WHERE customer_name, country;
+  answer: B
+  explanation: Spark SQL uses standard SELECT projection syntax. The database table can be a Spark catalog
+    table or SQL-accessible view.
+  documentation:
+  - title: Spark SQL SELECT
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select.html
+- id: SPARK-002
+  difficulty: beginner
+  topic: Filtering
+  type: code_completion
+  question: 'Complete: SELECT * FROM orders ____; to keep rows where total_amount is strictly greater than
+    100.'
+  answer: WHERE total_amount > 100
+  explanation: WHERE applies a row-level filter. Greater-than excludes values equal to 100; rows with NULL
+    total_amount do not satisfy it.
+  documentation:
+  - title: WHERE clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-where.html
+- id: SPARK-003
+  difficulty: beginner
+  topic: DISTINCT
+  type: true_false
+  question: SELECT DISTINCT country FROM customers eliminates repeated country values in the query output.
+  answer: true
+  explanation: DISTINCT returns unique result rows after selecting the requested expressions. Multiple NULLs
+    collapse into one result row.
+  documentation:
+  - title: Spark SQL SELECT
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select.html
+- id: SPARK-004
+  difficulty: beginner
+  topic: Ordering
+  type: multiple_choice
+  question: Which Spark SQL clause sorts all returned rows by order_date, newest first?
+  options:
+    A: SORT BY order_date ASC
+    B: ORDER BY order_date ASC
+    C: ORDER BY order_date DESC
+    D: DISTRIBUTE BY order_date DESC
+  answer: C
+  explanation: ORDER BY requests a global output ordering; DESC sorts from high to low. Add a unique tie-breaker
+    for deterministic ties.
+  documentation:
+  - title: ORDER BY clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-orderby.html
+- id: SPARK-005
+  difficulty: beginner
+  topic: LIMIT
+  type: code_completion
+  question: 'Fill the blank: SELECT * FROM products ORDER BY product_id ____; to return at most 10 products.'
+  answer: LIMIT 10
+  explanation: Spark SQL uses LIMIT 10 rather than the SQL Server-specific SELECT TOP (10). ORDER BY makes
+    the first records predictable when keys are unique.
+  documentation:
+  - title: LIMIT clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-limit.html
+- id: SPARK-006
+  difficulty: beginner
+  topic: NULL handling
+  type: multiple_select
+  question: Which expressions match a NULL value of department_id? Select all correct answers.
+  options:
+    A: department_id IS NULL
+    B: department_id = NULL
+    C: department_id <> NULL
+    D: NOT (department_id IS NOT NULL)
+  answer:
+  - A
+  - D
+  explanation: IS NULL and NOT(IS NOT NULL) both test NULL correctly. Ordinary equality to NULL does not evaluate
+    to TRUE.
+  documentation:
+  - title: NULL semantics
+    url: https://spark.apache.org/docs/latest/sql-ref-null-semantics.html
+- id: SPARK-007
+  difficulty: beginner
+  topic: Pattern matching
+  type: multiple_choice
+  question: What does customer_name LIKE 'Sam%' match?
+  options:
+    A: Only exactly Sam
+    B: Names beginning with Sam
+    C: Names ending with Sam
+    D: Names containing Sam only in the middle
+  answer: B
+  explanation: In a LIKE pattern, % matches zero or more characters, so both Sam and names starting with Sam
+    can match (subject to configured collation/case behavior).
+  documentation:
+  - title: Built-in SQL functions
+    url: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+- id: SPARK-008
+  difficulty: beginner
+  topic: Aggregation
+  type: true_false
+  question: GROUP BY country produces one group per distinct country value, including a group for NULL when
+    NULLs are present.
+  answer: true
+  explanation: GROUP BY groups rows with the same grouping-key values. A NULL grouping key appears as a group
+    rather than being silently discarded.
+  documentation:
+  - title: GROUP BY clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-groupby.html
+- id: SPARK-009
+  difficulty: beginner
+  topic: COUNT
+  type: multiple_choice
+  question: A table contains 8 rows, with 3 NULL values in salary. What is COUNT(salary)?
+  options:
+    A: '3'
+    B: '5'
+    C: '8'
+    D: 'NULL'
+  answer: B
+  explanation: COUNT(salary) counts non-NULL salary values (5), while COUNT(*) counts all 8 rows.
+  documentation:
+  - title: Built-in SQL functions
+    url: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+- id: SPARK-010
+  difficulty: beginner
+  topic: Duplicates
+  type: short_answer
+  question: Which single SQL keyword removes duplicate rows from a SELECT result?
+  answer: DISTINCT
+  accepted_answers:
+  - DISTINCT
+  - distinct
+  grading_notes: Case-insensitive; ignore surrounding whitespace.
+  explanation: DISTINCT requests deduplication of result rows across the selected columns.
+  documentation:
+  - title: Spark SQL SELECT
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select.html
+- id: SPARK-011
+  difficulty: beginner
+  topic: Query writing
+  type: query_writing
+  question: Write Spark SQL returning customer_id and customer_name for customers in Canada, ordered by customer_id
+    ascending.
+  answer: 'SELECT customer_id, customer_name
+
+    FROM customers
+
+    WHERE country = ''Canada''
+
+    ORDER BY customer_id ASC;'
+  grading_notes: Accept equivalent aliases and omission of ASC; the ordering key must be customer_id.
+  explanation: Filtering happens in WHERE, projection in SELECT, and ORDER BY determines output order. SQL
+    name resolution assumes customers is registered in the current catalog.
+  documentation:
+  - title: Spark SQL SELECT
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select.html
+  - title: ORDER BY clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-orderby.html
+- id: SPARK-012
+  difficulty: beginner
+  topic: Dates
+  type: multiple_choice
+  question: Which built-in Spark SQL expression returns the current date?
+  options:
+    A: current_date()
+    B: GETDATE()
+    C: SYSDATE()
+    D: TODAY()
+  answer: A
+  explanation: current_date() returns a DATE value representing the current date at the start of query evaluation,
+    in the session time-zone context.
+  documentation:
+  - title: Built-in SQL functions
+    url: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+- id: SPARK-013
+  difficulty: beginner
+  topic: NULL functions
+  type: multiple_select
+  question: Which statements about COALESCE in Spark SQL are correct? Select all that apply.
+  options:
+    A: COALESCE(NULL, 4, 5) yields 4.
+    B: COALESCE(NULL, 4, 5) yields 5.
+    C: COALESCE(NULL, NULL) yields NULL.
+    D: COALESCE is used to sort all partitions globally.
+  answer:
+  - A
+  - C
+  explanation: COALESCE evaluates candidate expressions from left to right and yields the first non-NULL value;
+    if all are NULL, it returns NULL.
+  documentation:
+  - title: Built-in SQL functions
+    url: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+  - title: NULL semantics
+    url: https://spark.apache.org/docs/latest/sql-ref-null-semantics.html
+- id: SPARK-014
+  difficulty: beginner
+  topic: JSON
+  type: multiple_choice
+  question: Which Spark SQL built-in extracts the value at JSON path '$.device.os' from a JSON-formatted STRING
+    payload?
+  options:
+    A: JSON_EXTRACT_SCALAR(payload, '$.device.os')
+    B: JSON_VALUE(payload, '$.device.os')
+    C: JSON_QUERY_VALUE(payload, '$.device.os')
+    D: get_json_object(payload, '$.device.os')
+  answer: D
+  explanation: get_json_object(json_string, json_path) extracts a JSON value as a string (or NULL if missing/unparseable).
+  documentation:
+  - title: Built-in SQL functions
+    url: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+- id: SPARK-015
+  difficulty: beginner
+  topic: Temporary views
+  type: true_false
+  question: A normal Spark SQL TEMPORARY VIEW is automatically a persistent metastore table that survives the
+    end of its Spark session.
+  answer: false
+  explanation: A regular temporary view has session scope and does not persist its definition as a catalog
+    table. Persistent views and global temporary views have different lifetimes.
+  documentation:
+  - title: CREATE VIEW (temporary and persistent)
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-view.html
+- id: SPARK-016
+  difficulty: intermediate
+  topic: Joins
+  type: code_completion
+  question: 'Complete the Spark SQL query to retain every customer even without an order: SELECT c.customer_id,
+    o.order_id FROM customers c ____ orders o ON c.customer_id = o.customer_id;'
+  answer: LEFT JOIN
+  explanation: LEFT JOIN preserves every row of the left relation and returns NULL for right-side columns when
+    no match exists.
+  documentation:
+  - title: JOIN syntax and join types
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-join.html
+- id: SPARK-017
+  difficulty: intermediate
+  topic: Left anti join
+  type: multiple_choice
+  question: Which Spark SQL join returns customers with no matching order and excludes right-hand columns?
+  options:
+    A: LEFT SEMI JOIN
+    B: INNER JOIN
+    C: LEFT ANTI JOIN
+    D: CROSS JOIN
+  answer: C
+  explanation: LEFT ANTI JOIN returns only rows from the left side with no matching right-side row. It is a
+    convenient Spark SQL construct for anti-matches.
+  documentation:
+  - title: JOIN syntax and join types
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-join.html
+- id: SPARK-018
+  difficulty: intermediate
+  topic: Joins
+  type: multiple_select
+  question: Which join statements are supported in Apache Spark SQL? Select all that apply.
+  options:
+    A: INNER JOIN
+    B: LEFT SEMI JOIN
+    C: LEFT UNMATCHED JOIN
+    D: FULL OUTER JOIN
+  answer:
+  - A
+  - B
+  - D
+  explanation: Spark supports INNER, LEFT SEMI and FULL OUTER joins (among others). LEFT UNMATCHED is not a
+    supported join type.
+  documentation:
+  - title: JOIN syntax and join types
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-join.html
+- id: SPARK-019
+  difficulty: intermediate
+  topic: Semi join
+  type: multiple_choice
+  question: What is the main output difference between a LEFT SEMI JOIN and an INNER JOIN?
+  options:
+    A: LEFT SEMI returns only matching left rows/columns and does not multiply rows per right match.
+    B: LEFT SEMI returns only right columns.
+    C: LEFT SEMI returns unmatched left rows.
+    D: LEFT SEMI always creates a Cartesian product.
+  answer: A
+  explanation: A left semi join returns qualifying rows/columns from the left relation only, without one output
+    row for each matching right-hand row.
+  documentation:
+  - title: JOIN syntax and join types
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-join.html
+- id: SPARK-020
+  difficulty: intermediate
+  topic: Query writing
+  type: query_writing
+  question: Write Spark SQL to return customer_id and customer_name for customers who have no matching row
+    in orders.
+  answer: "SELECT c.customer_id, c.customer_name\nFROM customers c\nLEFT ANTI JOIN orders o\n  ON c.customer_id\
+    \ = o.customer_id;"
+  grading_notes: Accept NOT EXISTS or a correct LEFT JOIN ... IS NULL solution, provided NULL conditions are
+    handled safely.
+  explanation: A LEFT ANTI JOIN directly expresses existence of no matching row. NOT EXISTS is also a semantically
+    valid alternative for this task.
+  documentation:
+  - title: JOIN syntax and join types
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-join.html
+- id: SPARK-021
+  difficulty: intermediate
+  topic: HAVING
+  type: multiple_choice
+  question: Which clause filters groups after a GROUP BY aggregation?
+  options:
+    A: WHERE
+    B: ORDER BY
+    C: HAVING
+    D: DISTRIBUTE BY
+  answer: C
+  explanation: HAVING filters grouped results based on aggregate conditions. WHERE normally filters the input
+    rows prior to aggregation.
+  documentation:
+  - title: HAVING clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-having.html
+- id: SPARK-022
+  difficulty: intermediate
+  topic: Aggregation
+  type: code_completion
+  question: 'Complete: SELECT customer_id, COUNT(*) AS n_orders FROM orders GROUP BY customer_id ____; to keep
+    customers having at least 3 orders.'
+  answer: HAVING COUNT(*) >= 3
+  explanation: HAVING operates on the aggregate groups, so it can filter by their COUNT(*) results.
+  documentation:
+  - title: HAVING clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-having.html
+- id: SPARK-023
+  difficulty: intermediate
+  topic: Multi-level aggregation
+  type: multiple_select
+  question: Which grouping constructs are available in Spark SQL? Select all that apply.
+  options:
+    A: GROUP BY ROLLUP(country, status)
+    B: GROUP BY CUBE(country, status)
+    C: GROUP BY GROUPING SETS ((country), (status), ())
+    D: GROUP BY GROUP ALL LEVELS (country, status)
+  answer:
+  - A
+  - B
+  - C
+  explanation: ROLLUP, CUBE and GROUPING SETS support subtotal and grand-total-style aggregate groups in Spark
+    SQL. GROUP ALL LEVELS is not a Spark SQL clause.
+  documentation:
+  - title: GROUP BY clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-groupby.html
+- id: SPARK-024
+  difficulty: intermediate
+  topic: Distinct aggregates
+  type: multiple_choice
+  question: Which expression counts unique non-NULL customer IDs within each group?
+  options:
+    A: COUNT(UNIQUE customer_id)
+    B: COUNT(DISTINCT customer_id)
+    C: DISTINCT COUNT ALL customer_id
+    D: COUNT(*) DISTINCT customer_id
+  answer: B
+  explanation: COUNT(DISTINCT customer_id) counts distinct non-NULL values. Use an approximate estimator only
+    when approximation is acceptable.
+  documentation:
+  - title: Built-in SQL functions
+    url: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+- id: SPARK-025
+  difficulty: intermediate
+  topic: Query writing
+  type: query_writing
+  question: Write Spark SQL returning country and the number of customers per country, excluding NULL countries
+    and keeping only countries with at least 10 customers.
+  answer: 'SELECT country, COUNT(*) AS customer_count
+
+    FROM customers
+
+    WHERE country IS NOT NULL
+
+    GROUP BY country
+
+    HAVING COUNT(*) >= 10;'
+  grading_notes: Accept equivalent aliases and a subquery-based group filter. No ordering is required.
+  explanation: WHERE removes NULL-key rows before grouping. HAVING then filters groups based on each group’s
+    aggregate count.
+  documentation:
+  - title: WHERE clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-where.html
+  - title: GROUP BY clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-groupby.html
+  - title: HAVING clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-having.html
+- id: SPARK-026
+  difficulty: intermediate
+  topic: Window functions
+  type: multiple_select
+  question: Which claims about Spark SQL window functions are correct? Select all that apply.
+  options:
+    A: ROW_NUMBER() OVER (PARTITION BY department_id ORDER BY salary DESC) assigns a position within each department.
+    B: Every window function requires GROUP BY.
+    C: LAG(value) OVER (PARTITION BY category ORDER BY metric_date) can reference a previous row.
+    D: Window functions always reduce the result to one row per group.
+  answer:
+  - A
+  - C
+  explanation: Window functions use OVER and can compute rankings or lagged values while retaining input rows.
+    Aggregation without OVER typically collapses rows into grouped results.
+  documentation:
+  - title: Window functions
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-window.html
+- id: SPARK-027
+  difficulty: intermediate
+  topic: Window functions
+  type: code_completion
+  question: 'Fill the blank: SELECT employee_id, department_id, ____ AS rn FROM employees; to assign a row
+    number within each department, highest salary first.'
+  answer: ROW_NUMBER() OVER (PARTITION BY department_id ORDER BY salary DESC, employee_id)
+  grading_notes: The Streamlit app compares the text answer literally after basic normalization; semantically
+    equivalent variants can be marked equivalent manually.
+  explanation: PARTITION BY restarts ROW_NUMBER within each department. Salary descending gives highest pay
+    first; employee_id breaks salary ties deterministically when unique.
+  documentation:
+  - title: Window functions
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-window.html
+- id: SPARK-028
+  difficulty: intermediate
+  topic: Window ranks
+  type: multiple_choice
+  question: For ordered values 100, 100, 90 (descending), which pairs show RANK and DENSE_RANK at the third
+    row?
+  options:
+    A: RANK=2, DENSE_RANK=3
+    B: RANK=1, DENSE_RANK=1
+    C: RANK=3, DENSE_RANK=3
+    D: RANK=3, DENSE_RANK=2
+  answer: D
+  explanation: RANK leaves gaps after ties (1,1,3), whereas DENSE_RANK uses consecutive ranks (1,1,2).
+  documentation:
+  - title: Window functions
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-window.html
+- id: SPARK-029
+  difficulty: intermediate
+  topic: Distributed sorting
+  type: true_false
+  question: In Spark SQL, SORT BY alone guarantees that the entire result is globally sorted across all partitions.
+  answer: false
+  explanation: SORT BY orders rows within partitions only. ORDER BY globally sorts the output; this distinction
+    matters in a distributed execution engine.
+  documentation:
+  - title: SORT BY clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-sortby.html
+  - title: ORDER BY clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-orderby.html
+- id: SPARK-030
+  difficulty: intermediate
+  topic: Approximate aggregates
+  type: multiple_choice
+  question: Which Spark SQL aggregate is intended for estimating the number of distinct values using less computation/memory
+    than exact distinct counting in many cases?
+  options:
+    A: ROW_NUMBER()
+    B: approx_count_distinct(customer_id)
+    C: collect_list(customer_id)
+    D: count_if(customer_id)
+  answer: B
+  explanation: approx_count_distinct computes an approximate distinct count, using an algorithm designed for
+    scalable cardinality estimation.
+  documentation:
+  - title: Built-in SQL functions
+    url: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+- id: SPARK-031
+  difficulty: intermediate
+  topic: Arrays
+  type: code_completion
+  question: Fill the blank in SELECT ____ AS tag FROM events; to generate one output row for each array element
+    in tags. (No original columns need to be retained.)
+  answer: explode(tags)
+  explanation: explode on an ARRAY produces one row per element. For a NULL or empty array, standard explode
+    returns no rows; explode_outer preserves an outer row.
+  documentation:
+  - title: Built-in SQL functions
+    url: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+- id: SPARK-032
+  difficulty: intermediate
+  topic: Query writing
+  type: query_writing
+  question: Write Spark SQL returning event_id and one tag per row from events(event_id, tags ARRAY<STRING>).
+    Rows with empty tag arrays may be omitted.
+  answer: 'SELECT e.event_id, tag
+
+    FROM events e
+
+    LATERAL VIEW explode(e.tags) t AS tag;'
+  grading_notes: Accept equivalent SELECT event_id, explode(tags) AS tag FROM events where valid in the target
+    Spark version.
+  explanation: LATERAL VIEW applies explode to each source row while allowing the event_id column to accompany
+    each generated tag.
+  documentation:
+  - title: LATERAL VIEW
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-lateral-view.html
+- id: SPARK-033
+  difficulty: intermediate
+  topic: CTEs
+  type: multiple_select
+  question: Which statements about a nonrecursive WITH common table expression (CTE) in Spark SQL are correct?
+    Select all that apply.
+  options:
+    A: It can make complex queries easier to read.
+    B: It always materializes the result and writes a Parquet table.
+    C: It must be used with a CREATE TABLE statement.
+    D: It can be referenced by name within the scope of the query.
+  answer:
+  - A
+  - D
+  explanation: WITH defines named query results within one SQL statement. It does not by itself create a durable
+    table or automatically cache its result.
+  documentation:
+  - title: Common table expressions
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-cte.html
+- id: SPARK-034
+  difficulty: intermediate
+  topic: PySpark integration
+  type: ordering
+  question: Arrange these steps to query a Parquet file with Spark SQL through PySpark.
+  options:
+    A: result = spark.sql('SELECT COUNT(*) AS n FROM event_view')
+    B: df = spark.read.parquet('/data/events')
+    C: result.show()
+    D: df.createOrReplaceTempView('event_view')
+  answer:
+  - B
+  - D
+  - A
+  - C
+  explanation: Load the file as a DataFrame, register a session temporary view, execute a Spark SQL string
+    against it, and display the result.
+  documentation:
+  - title: PySpark createOrReplaceTempView
+    url: https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.createOrReplaceTempView.html
+- id: SPARK-035
+  difficulty: intermediate
+  topic: Data sources
+  type: multiple_choice
+  question: What does USING PARQUET specify in CREATE TABLE sales USING PARQUET AS SELECT ... ?
+  options:
+    A: The SQL query is evaluated exclusively on the driver.
+    B: The new table uses the Parquet data source.
+    C: The table can contain only one partition.
+    D: All fields are converted to STRING.
+  answer: B
+  explanation: USING PARQUET specifies the data-source provider/storage format for the created table; this
+    is standard Spark SQL datasource syntax.
+  documentation:
+  - title: CREATE TABLE using a data source
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-table-datasource.html
+- id: SPARK-036
+  difficulty: intermediate
+  topic: Configuration
+  type: short_answer
+  question: What is the Spark SQL configuration key used to set the default number of shuffle partitions?
+  answer: spark.sql.shuffle.partitions
+  accepted_answers:
+  - spark.sql.shuffle.partitions
+  grading_notes: Ignore leading/trailing whitespace and case.
+  explanation: This setting controls the default shuffle partition count for many SQL operations, although
+    AQE may coalesce partitions dynamically.
+  documentation:
+  - title: Spark SQL performance tuning
+    url: https://spark.apache.org/docs/latest/sql-performance-tuning
+  - title: SET SQL configuration
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-conf-mgmt-set.html
+- id: SPARK-037
+  difficulty: intermediate
+  topic: Query writing
+  type: query_writing
+  question: Write Spark SQL to create a Parquet table completed_orders with order_id, customer_id and total_amount
+    for rows of orders whose status equals 'completed'. Assume completed_orders does not already exist.
+  answer: 'CREATE TABLE completed_orders
+
+    USING PARQUET
+
+    AS SELECT order_id, customer_id, total_amount
+
+    FROM orders
+
+    WHERE status = ''completed'';'
+  grading_notes: Accept equivalent Spark SQL CTAS with the required projection and status predicate.
+  explanation: 'CREATE TABLE ... USING PARQUET AS SELECT is CTAS: it creates the table and populates it with
+    the query result. The chosen name is illustrative and not inherently Canada-filtered.'
+  documentation:
+  - title: CREATE TABLE using a data source
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-table-datasource.html
+  - title: WHERE clause
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-where.html
+- id: SPARK-038
+  difficulty: advanced
+  topic: Distributed execution
+  type: multiple_choice
+  question: Which operation most directly tends to require a shuffle in a distributed Spark SQL query?
+  options:
+    A: SELECT 1
+    B: SELECT customer_id FROM customers
+    C: GROUP BY customer_id across randomly distributed input
+    D: Changing a column alias in SELECT
+  answer: C
+  explanation: GROUP BY on a key generally requires bringing values for the same key together, often involving
+    a shuffle unless suitable input partitioning or other optimizations eliminate it.
+  documentation:
+  - title: Spark SQL performance tuning
+    url: https://spark.apache.org/docs/latest/sql-performance-tuning
+- id: SPARK-039
+  difficulty: advanced
+  topic: Join hints
+  type: code_completion
+  question: 'Fill the Spark SQL hint: SELECT ____ f.*, d.category FROM order_items f JOIN products d ON f.product_id
+    = d.product_id; to suggest broadcasting the products side.'
+  answer: /*+ BROADCAST(d) */
+  explanation: The BROADCAST(d) hint requests a broadcast join strategy for alias d where the join is supported
+    and the planner can honor it. Hints influence plans but are not a correctness guarantee.
+  documentation:
+  - title: Join and partitioning hints
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-hints.html
+  - title: Spark SQL performance tuning
+    url: https://spark.apache.org/docs/latest/sql-performance-tuning
+- id: SPARK-040
+  difficulty: advanced
+  topic: Adaptive Query Execution
+  type: multiple_select
+  question: Which optimizations can Adaptive Query Execution (AQE) perform in Spark SQL? Select all that apply.
+  options:
+    A: Coalesce shuffle partitions after examining runtime statistics.
+    B: Split/skew-optimize heavily imbalanced shuffle partitions in supported joins.
+    C: Convert all SQL into MySQL queries automatically.
+    D: Change a planned sort-merge join into a broadcast join where appropriate.
+  answer:
+  - A
+  - B
+  - D
+  explanation: AQE can coalesce post-shuffle partitions, optimize skewed joins, and select certain more suitable
+    join strategies based on runtime statistics; it does not replace a SQL engine with a different database.
+  documentation:
+  - title: Spark SQL performance tuning
+    url: https://spark.apache.org/docs/latest/sql-performance-tuning
+- id: SPARK-041
+  difficulty: advanced
+  topic: Query plans
+  type: multiple_choice
+  question: Which Spark SQL command can display a formatted query execution plan without executing the full
+    SELECT for its rows?
+  options:
+    A: EXPLAIN FORMATTED SELECT * FROM orders
+    B: PROFILE DATABASE orders
+    C: DESCRIBE PHYSICAL SELECT * FROM orders
+    D: SHOW PLAN ONLY orders
+  answer: A
+  explanation: EXPLAIN FORMATTED displays physical-plan details useful for examining joins, exchanges, and
+    scans.
+  documentation:
+  - title: EXPLAIN query plans
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-explain.html
+- id: SPARK-042
+  difficulty: advanced
+  topic: NULL-safe equality
+  type: short_answer
+  question: Which Spark SQL comparison operator treats NULL <=> NULL as TRUE?
+  answer: <=>
+  accepted_answers:
+  - <=>
+  grading_notes: Enter the three characters without surrounding SQL text.
+  explanation: The null-safe equal operator <=> returns TRUE when both operands are NULL, unlike the ordinary
+    = operator. It is useful for null-aware equality joins and predicates.
+  documentation:
+  - title: NULL semantics
+    url: https://spark.apache.org/docs/latest/sql-ref-null-semantics.html
+- id: SPARK-043
+  difficulty: advanced
+  topic: Caching
+  type: true_false
+  question: CACHE LAZY TABLE my_table postpones populating the cache until a later query uses the table.
+  answer: true
+  explanation: The optional LAZY keyword defers caching until first use rather than triggering immediate cache
+    population.
+  documentation:
+  - title: CACHE TABLE
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-cache-cache-table.html
+- id: SPARK-044
+  difficulty: advanced
+  topic: Query writing
+  type: query_writing
+  question: Write Spark SQL to return the highest-paid employee from each department, breaking salary ties
+    by the smallest employee_id. Return department_id, employee_id and salary.
+  answer: "WITH ranked AS (\n  SELECT department_id, employee_id, salary,\n         ROW_NUMBER() OVER (\n \
+    \          PARTITION BY department_id\n           ORDER BY salary DESC NULLS LAST, employee_id ASC\n  \
+    \       ) AS rn\n  FROM employees\n)\nSELECT department_id, employee_id, salary\nFROM ranked\nWHERE rn\
+    \ = 1;"
+  grading_notes: Accept a correct correlated max + tie-breaker or window-function solution; one employee per
+    department required.
+  explanation: ROW_NUMBER assigns one row per department when filtered to rn=1. Explicit NULLS LAST places
+    unknown salaries after known salaries; the ID tie-breaker makes selection reproducible if employee_id is
+    unique.
+  documentation:
+  - title: Common table expressions
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-cte.html
+  - title: Window functions
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-window.html
+- id: SPARK-045
+  difficulty: advanced
+  topic: Partitioning hints
+  type: code_completion
+  question: 'Fill the hint to request eight shuffle partitions: SELECT ____ * FROM orders;'
+  answer: /*+ REPARTITION(8) */
+  explanation: The REPARTITION(8) hint requests repartitioning into eight partitions; actual runtime optimization
+    may adjust physical behaviour.
+  documentation:
+  - title: Join and partitioning hints
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-hints.html
+- id: SPARK-046
+  difficulty: advanced
+  topic: Partition pruning
+  type: multiple_choice
+  question: A Parquet table is partitioned by event_date. What is a common benefit of WHERE event_date = DATE
+    '2026-01-01'?
+  options:
+    A: Spark can avoid scanning unrelated date partitions.
+    B: It guarantees the entire job uses one executor.
+    C: It ensures no shuffle will occur anywhere in the plan.
+    D: It automatically creates a primary-key index.
+  answer: A
+  explanation: Filtering directly on the partition column can allow partition pruning so irrelevant partition
+    directories/files need not be scanned.
+  documentation:
+  - title: CREATE TABLE using a data source
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-table-datasource.html
+  - title: Spark SQL performance tuning
+    url: https://spark.apache.org/docs/latest/sql-performance-tuning
+- id: SPARK-047
+  difficulty: advanced
+  topic: Spark optimization
+  type: multiple_select
+  question: Which statements reflect appropriate Spark SQL performance-tuning practices? Select all that apply.
+  options:
+    A: Inspect EXPLAIN plans for unexpected exchanges and expensive joins.
+    B: Always force BROADCAST on the largest relation in every join.
+    C: Push selective filters down and project only needed columns where possible.
+    D: Consider whether a genuinely small join side is suitable for broadcast.
+  answer:
+  - A
+  - C
+  - D
+  explanation: Review plans, reduce unnecessary scanning/columns, and use appropriately sized broadcast-side
+    tables where relevant. Blindly broadcasting an enormous table risks memory pressure and is not a general
+    optimization.
+  documentation:
+  - title: Spark SQL performance tuning
+    url: https://spark.apache.org/docs/latest/sql-performance-tuning
+  - title: EXPLAIN query plans
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-explain.html
+- id: SPARK-048
+  difficulty: advanced
+  topic: ANSI mode
+  type: multiple_choice
+  question: Which Spark SQL function returns NULL when an input like 'abc' cannot be parsed using a 3-digit
+    numeric format?
+  options:
+    A: CAST('abc' AS INT)
+    B: try_to_number('abc', '999')
+    C: force_cast('abc' AS INT)
+    D: parse_int('abc')
+  answer: B
+  explanation: try_to_number returns NULL for malformed strings that do not match the supplied numeric format;
+    this is available in Spark 3.5 as well as later versions.
+  documentation:
+  - title: Built-in SQL functions
+    url: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+  - title: ANSI SQL compliance
+    url: https://spark.apache.org/docs/latest/sql-ref-ansi-compliance.html
+- id: SPARK-049
+  difficulty: advanced
+  topic: Troubleshooting
+  type: ordering
+  question: Put these four actions in a sensible diagnostic sequence for a slow Spark SQL join, assuming you
+    can safely test changes.
+  options:
+    A: Identify costly exchanges, skew, or a poor join strategy in the plan.
+    B: Rerun the workload and compare observed runtime and plan.
+    C: Run EXPLAIN FORMATTED on the original query.
+    D: Try an evidence-based change such as pruning columns or a small-side broadcast hint.
+  answer:
+  - C
+  - A
+  - D
+  - B
+  explanation: Start by inspecting the current execution plan, identify the likely bottleneck, test a targeted
+    strategy, then rerun and compare both plan and runtime. A hint is not automatically the correct fix.
+  documentation:
+  - title: EXPLAIN query plans
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-explain.html
+  - title: Spark SQL performance tuning
+    url: https://spark.apache.org/docs/latest/sql-performance-tuning
+  - title: Join and partitioning hints
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-hints.html
+- id: SPARK-050
+  difficulty: advanced
+  topic: Query writing
+  type: query_writing
+  question: Write Spark SQL that aggregates completed-order revenue by calendar month and reports month, monthly_revenue
+    and the change from the preceding month. Include months with completed orders; do not invent missing months.
+  answer: "WITH monthly AS (\n  SELECT date_trunc('month', CAST(order_date AS TIMESTAMP)) AS month,\n     \
+    \    SUM(total_amount) AS monthly_revenue\n  FROM orders\n  WHERE status = 'completed'\n  GROUP BY date_trunc('month',\
+    \ CAST(order_date AS TIMESTAMP))\n)\nSELECT month, monthly_revenue,\n       monthly_revenue - LAG(monthly_revenue)\
+    \ OVER (ORDER BY month) AS revenue_change\nFROM monthly\nORDER BY month;"
+  grading_notes: Accept DATE_TRUNC/TO_DATE alternatives with equivalent month grouping. LAG must be applied
+    after monthly aggregation and rows globally ordered by month.
+  explanation: The first step aggregates by month; LAG reads the prior observed month in the grouped result.
+    The first row has a NULL change, and absent months are not generated.
+  documentation:
+  - title: Built-in SQL functions
+    url: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+  - title: Window functions
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-window.html
+  - title: Common table expressions
+    url: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-cte.html
