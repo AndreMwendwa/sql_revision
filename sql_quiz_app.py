@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-DEFAULT_YAML = Path(__file__).with_name("sql_50_questions_answers.yaml")
+DEFAULT_YAML = Path(__file__).with_name("spark_sql_50_questions_answers.yaml")
 TYPE_LABELS = {
     "multiple_choice": "Multiple choice",
     "multiple_select": "Select all that apply",
